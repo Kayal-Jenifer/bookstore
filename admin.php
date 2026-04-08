@@ -4,26 +4,6 @@ include 'includes/auth.php';
 include 'includes/admin_auth.php';
 
 ensureDefaultAdmin($conn);
-function redirectToAdminSection(string $section): void
-{
-    header("Location: admin.php?section=" . urlencode($section) . "#" . urlencode($section));
-    exit;
-}
-
-function setAdminFlash(string $type, string $message): void
-{
-    $_SESSION["admin_flash"] = [
-        "type" => $type,
-        "message" => $message
-    ];
-}
-
-function normalizeDateOrNull(?string $value): ?string
-{
-    $value = trim((string) $value);
-
-    return $value === "" ? null : $value;
-}
 
 function renderAlertClass(string $type): string
 {
@@ -39,215 +19,6 @@ if (!in_array($activeSection, $allowedSections, true)) {
 }
 
 requireAdminLogin("admin-login.php");
-
-if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $action = $_POST["action"] ?? "";   
-    $section = $_POST["section"] ?? $activeSection;
-
-
-//   Handle create, update, and delete actions for authors, books, customers, and orders
-    try {
-        switch ($action) {
-            case "save_author":
-                $authorId = (int) ($_POST["author_id"] ?? 0);
-                $name = trim($_POST["name"] ?? "");
-                $dob = normalizeDateOrNull($_POST["dob"] ?? null);
-                $nationality = trim($_POST["nationality"] ?? "");
-
-                if ($name === "" || $nationality === "") {
-                    throw new RuntimeException("Author name and nationality are required.");
-                }
-
-                if ($authorId > 0) {
-                    $statement = $conn->prepare("UPDATE authors SET name = ?, dob = ?, nationality = ? WHERE author_id = ?");
-                    $statement->bind_param("sssi", $name, $dob, $nationality, $authorId);
-                    $statement->execute();
-                    $statement->close();
-                    setAdminFlash("success", "Author updated successfully.");
-                } else {
-                    $statement = $conn->prepare("INSERT INTO authors (name, dob, nationality) VALUES (?, ?, ?)");
-                    $statement->bind_param("sss", $name, $dob, $nationality);
-                    $statement->execute();
-                    $statement->close();
-                    setAdminFlash("success", "Author created successfully.");
-                }
-
-                redirectToAdminSection("authors");
-                break;
-
-            case "delete_author":
-                $authorId = (int) ($_POST["author_id"] ?? 0);
-                $conn->begin_transaction();
-
-                $statement = $conn->prepare(
-                    "DELETE order_items
-                    FROM order_items
-                    INNER JOIN books ON books.book_id = order_items.book_id
-                    WHERE books.author_id = ?"
-                );
-                $statement->bind_param("i", $authorId);
-                $statement->execute();
-                $statement->close();
-
-                $statement = $conn->prepare("DELETE FROM books WHERE author_id = ?");
-                $statement->bind_param("i", $authorId);
-                $statement->execute();
-                $statement->close();
-
-                $statement = $conn->prepare("DELETE FROM authors WHERE author_id = ?");
-                $statement->bind_param("i", $authorId);
-                $statement->execute();
-                $statement->close();
-
-                $conn->commit();
-                setAdminFlash("success", "Author deleted successfully.");
-                redirectToAdminSection("authors");
-                break;
-
-            case "save_book":
-                $bookId = (int) ($_POST["book_id"] ?? 0);
-                $title = trim($_POST["title"] ?? "");
-                $isbn = trim($_POST["isbn"] ?? "");
-                $genre = trim($_POST["genre"] ?? "");
-                $price = (float) ($_POST["price"] ?? 0);
-                $stock = (int) ($_POST["stock"] ?? 0);
-                $authorId = (int) ($_POST["author_id"] ?? 0);
-                $publisher = trim($_POST["publisher"] ?? "");
-
-                if ($title === "" || $isbn === "" || $genre === "" || $publisher === "" || $authorId <= 0) {
-                    throw new RuntimeException("All book fields are required.");
-                }
-
-                if ($bookId > 0) {
-                    $statement = $conn->prepare("UPDATE books SET title = ?, isbn = ?, genre = ?, price = ?, stock = ?, author_id = ?, publisher = ? WHERE book_id = ?");
-                    $statement->bind_param("sssdiisi", $title, $isbn, $genre, $price, $stock, $authorId, $publisher, $bookId);
-                    $statement->execute();
-                    $statement->close();
-                    setAdminFlash("success", "Book updated successfully.");
-                } else {
-                    $statement = $conn->prepare("INSERT INTO books (title, isbn, genre, price, stock, author_id, publisher) VALUES (?, ?, ?, ?, ?, ?, ?)");
-                    $statement->bind_param("sssdiis", $title, $isbn, $genre, $price, $stock, $authorId, $publisher);
-                    $statement->execute();
-                    $statement->close();
-                    setAdminFlash("success", "Book created successfully.");
-                }
-
-                redirectToAdminSection("books");
-                break;
-
-            case "delete_book":
-                $bookId = (int) ($_POST["book_id"] ?? 0);
-                $conn->begin_transaction();
-
-                $statement = $conn->prepare("DELETE FROM order_items WHERE book_id = ?");
-                $statement->bind_param("i", $bookId);
-                $statement->execute();
-                $statement->close();
-
-                $statement = $conn->prepare("DELETE FROM books WHERE book_id = ?");
-                $statement->bind_param("i", $bookId);
-                $statement->execute();
-                $statement->close();
-
-                $conn->commit();
-                setAdminFlash("success", "Book deleted successfully.");
-                redirectToAdminSection("books");
-                break;
-
-            case "save_customer":
-                $customerId = (int) ($_POST["customer_id"] ?? 0);
-                $name = trim($_POST["name"] ?? "");
-                $email = trim($_POST["email"] ?? "");
-                $phone = trim($_POST["phone"] ?? "");
-
-                if ($name === "" || $email === "" || $phone === "") {
-                    throw new RuntimeException("Customer name, email, and phone are required.");
-                }
-
-                if ($customerId > 0) {
-                    $statement = $conn->prepare("UPDATE customers SET name = ?, email = ?, phone = ? WHERE customer_id = ?");
-                    $statement->bind_param("sssi", $name, $email, $phone, $customerId);
-                    $statement->execute();
-                    $statement->close();
-                    setAdminFlash("success", "Customer updated successfully.");
-                } else {
-                    $statement = $conn->prepare("INSERT INTO customers (name, email, phone) VALUES (?, ?, ?)");
-                    $statement->bind_param("sss", $name, $email, $phone);
-                    $statement->execute();
-                    $statement->close();
-                    setAdminFlash("success", "Customer created successfully.");
-                }
-
-                redirectToAdminSection("customers");
-                break;
-
-            case "delete_customer":
-                $customerId = (int) ($_POST["customer_id"] ?? 0);
-                $statement = $conn->prepare("DELETE FROM customers WHERE customer_id = ?");
-                $statement->bind_param("i", $customerId);
-                $statement->execute();
-                $statement->close();
-                setAdminFlash("success", "Customer deleted successfully.");
-                redirectToAdminSection("customers");
-                break;
-
-            case "save_order":
-                $orderId = (int) ($_POST["order_id"] ?? 0);
-                $customerId = (int) ($_POST["customer_id"] ?? 0);
-                $orderDate = trim($_POST["order_date"] ?? "");
-                $totalAmount = (float) ($_POST["total_amount"] ?? 0);
-                $notes = trim($_POST["notes"] ?? "");
-
-                if ($customerId <= 0 || $orderDate === "") {
-                    throw new RuntimeException("Customer and order date are required.");
-                }
-
-                if ($orderId > 0) {
-                    $statement = $conn->prepare("UPDATE orders SET customer_id = ?, order_date = ?, total_amount = ?, notes = ? WHERE order_id = ?");
-                    $statement->bind_param("isdsi", $customerId, $orderDate, $totalAmount, $notes, $orderId);
-                    $statement->execute();
-                    $statement->close();
-                    setAdminFlash("success", "Order updated successfully.");
-                } else {
-                    $statement = $conn->prepare("INSERT INTO orders (customer_id, order_date, total_amount, notes) VALUES (?, ?, ?, ?)");
-                    $statement->bind_param("isds", $customerId, $orderDate, $totalAmount, $notes);
-                    $statement->execute();
-                    $statement->close();
-                    setAdminFlash("success", "Order created successfully.");
-                }
-
-                redirectToAdminSection("orders");
-                break;
-
-            case "delete_order":
-                $orderId = (int) ($_POST["order_id"] ?? 0);
-                $statement = $conn->prepare("DELETE FROM orders WHERE order_id = ?");
-                $statement->bind_param("i", $orderId);
-                $statement->execute();
-                $statement->close();
-                setAdminFlash("success", "Order deleted successfully.");
-                redirectToAdminSection("orders");
-                break;
-        }
-    } catch (Throwable $exception) {
-        try {
-            $conn->rollback();
-        } catch (Throwable $rollbackException) {
-            // Ignore rollback errors and report the original exception.
-        }
-
-        $message = $exception->getMessage();
-
-        if (str_contains($message, "Duplicate entry")) {
-            $message = "That record already exists. Please use a unique value.";
-        } elseif (str_contains($message, "foreign key constraint fails")) {
-            $message = "This record is linked to other data and cannot be deleted yet.";
-        }
-
-        setAdminFlash("error", $message);
-        redirectToAdminSection($section);
-    }
-}
 
 // Fetch data to display in admin sections
 
@@ -360,7 +131,7 @@ include 'includes/header.php';
                     </div>
                 </div>
                 <div class="adminGrid">
-                    <form method="post" class="adminPanel adminFormGrid">
+                    <form method="post" action="admin_backend.php" class="adminPanel adminFormGrid">
                         <input type="hidden" name="action" value="save_author">
                         <input type="hidden" name="section" value="authors">
                         <input type="hidden" name="author_id" value="<?php echo (int) ($editingAuthor["author_id"] ?? 0); ?>">
@@ -413,7 +184,7 @@ include 'includes/header.php';
                                             <td><?php echo htmlspecialchars($author["nationality"]); ?></td>
                                             <td class="adminActionCell">
                                                 <a href="admin.php?section=authors&edit_author=<?php echo (int) $author["author_id"]; ?>#authors" class="btn btn-sm btn-outline-primary">Edit</a>
-                                                <form method="post" onsubmit="return confirm('Delete this author?');">
+                                                <form method="post" action="admin_backend.php" onsubmit="return confirm('Delete this author?');">
                                                     <input type="hidden" name="action" value="delete_author">
                                                     <input type="hidden" name="section" value="authors">
                                                     <input type="hidden" name="author_id" value="<?php echo (int) $author["author_id"]; ?>">
@@ -436,7 +207,7 @@ include 'includes/header.php';
                     </div>
                 </div>
                 <div class="adminGrid">
-                    <form method="post" class="adminPanel adminFormGrid">
+                    <form method="post" action="admin_backend.php" class="adminPanel adminFormGrid">
                         <input type="hidden" name="action" value="save_book">
                         <input type="hidden" name="section" value="books">
                         <input type="hidden" name="book_id" value="<?php echo (int) ($editingBook["book_id"] ?? 0); ?>">
@@ -520,7 +291,7 @@ include 'includes/header.php';
                                             <td><?php echo (int) $book["stock"]; ?></td>
                                             <td class="adminActionCell">
                                                 <a href="admin.php?section=books&edit_book=<?php echo (int) $book["book_id"]; ?>#books" class="btn btn-sm btn-outline-primary">Edit</a>
-                                                <form method="post" onsubmit="return confirm('Delete this book?');">
+                                                <form method="post" action="admin_backend.php" onsubmit="return confirm('Delete this book?');">
                                                     <input type="hidden" name="action" value="delete_book">
                                                     <input type="hidden" name="section" value="books">
                                                     <input type="hidden" name="book_id" value="<?php echo (int) $book["book_id"]; ?>">
@@ -544,7 +315,7 @@ include 'includes/header.php';
                     </div>
                 </div>
                 <div class="adminGrid">
-                    <form method="post" class="adminPanel adminFormGrid">
+                    <form method="post" action="admin_backend.php" class="adminPanel adminFormGrid">
                         <input type="hidden" name="action" value="save_customer">
                         <input type="hidden" name="section" value="customers">
                         <input type="hidden" name="customer_id" value="<?php echo (int) ($editingCustomer["customer_id"] ?? 0); ?>">
@@ -597,7 +368,7 @@ include 'includes/header.php';
                                             <td><?php echo htmlspecialchars($customer["phone"]); ?></td>
                                             <td class="adminActionCell">
                                                 <a href="admin.php?section=customers&edit_customer=<?php echo (int) $customer["customer_id"]; ?>#customers" class="btn btn-sm btn-outline-primary">Edit</a>
-                                                <form method="post" onsubmit="return confirm('Delete this customer?');">
+                                                <form method="post" action="admin_backend.php" onsubmit="return confirm('Delete this customer?');">
                                                     <input type="hidden" name="action" value="delete_customer">
                                                     <input type="hidden" name="section" value="customers">
                                                     <input type="hidden" name="customer_id" value="<?php echo (int) $customer["customer_id"]; ?>">
@@ -621,7 +392,7 @@ include 'includes/header.php';
                     </div>
                 </div>
                 <div class="adminGrid">
-                    <form method="post" class="adminPanel adminFormGrid">
+                    <form method="post" action="admin_backend.php" class="adminPanel adminFormGrid">
                         <input type="hidden" name="action" value="save_order">
                         <input type="hidden" name="section" value="orders">
                         <input type="hidden" name="order_id" value="<?php echo (int) ($editingOrder["order_id"] ?? 0); ?>">
@@ -692,7 +463,7 @@ include 'includes/header.php';
                                             <td><?php echo htmlspecialchars($order["notes"] ?: "No notes"); ?></td>
                                             <td class="adminActionCell">
                                                 <a href="admin.php?section=orders&edit_order=<?php echo (int) $order["order_id"]; ?>#orders" class="btn btn-sm btn-outline-primary">Edit</a>
-                                                <form method="post" onsubmit="return confirm('Delete this order?');">
+                                                <form method="post" action="admin_backend.php" onsubmit="return confirm('Delete this order?');">
                                                     <input type="hidden" name="action" value="delete_order">
                                                     <input type="hidden" name="section" value="orders">
                                                     <input type="hidden" name="order_id" value="<?php echo (int) $order["order_id"]; ?>">
