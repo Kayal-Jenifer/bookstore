@@ -273,26 +273,34 @@ a {
   border-radius: 18px;
   overflow: hidden;
   box-shadow: var(--shadowSoft);
+  background: var(--whiteColor);
+  transition: var(--transitionFast);
+}
+
+.bookCard:hover {
+  transform: translateY(-6px);
 }
 
 .bookCover {
   width: 100%;
-  height: 240px;
+  height: 320px;
   object-fit: cover;
+  display: block;
+  background: #f7efe7;
 }
 
 .bookCardBody {
   display: flex;
   flex-direction: column;
-  min-height: 290px;
-  padding: 22px;
+  min-height: 230px;
+  padding: 18px;
 }
 
 .bookGenreTag {
   display: inline-block;
   align-self: flex-start;
-  margin-bottom: 12px;
-  padding: 6px 12px;
+  margin-bottom: 8px;
+  padding: 5px 11px;
   border-radius: 999px;
   background: rgba(123, 45, 38, 0.1);
   color: var(--primaryColor);
@@ -301,13 +309,15 @@ a {
 }
 
 .bookCard .card-title {
-  margin-bottom: 12px;
-  font-size: 1.8rem;
+  margin-bottom: 8px;
+  font-size: 1.45rem;
+  line-height: 1.2;
 }
 
 .bookCard .card-text {
-  margin-bottom: 20px;
+  margin-bottom: 14px;
   color: #444;
+  font-size: 0.98rem;
 }
 
 .viewDetailsBtn {
@@ -593,7 +603,7 @@ a {
   }
 
   .bookCover {
-    height: 210px;
+    height: 260px;
   }
 
   .bookCardBody {
@@ -743,8 +753,67 @@ a {
 
 .adminField input,
 .adminField select {
+  width: 100%;
+  max-width: 100%;
   min-height: 48px;
   border-radius: 14px;
+}
+
+.adminField input[type="file"] {
+  overflow: hidden;
+}
+
+.bookCropTool {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(123, 45, 38, 0.05);
+  border: 1px solid rgba(123, 45, 38, 0.12);
+}
+
+.bookCropPreviewWrap {
+  display: flex;
+  justify-content: center;
+}
+
+.bookCropFrame {
+  position: relative;
+  width: 220px;
+  height: 320px;
+  overflow: hidden;
+  border-radius: 18px;
+  background: #f7efe7;
+  box-shadow: var(--shadowSoft);
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.bookCropFrame.isDragging {
+  cursor: grabbing;
+}
+
+.bookCropFrame img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  max-width: none;
+  will-change: transform;
+  transform-origin: center;
+  user-select: none;
+  pointer-events: none;
+}
+
+.bookCropControls {
+  display: grid;
+  gap: 12px;
+}
+
+.bookCropHint {
+  color: #6d6159;
+  font-weight: 600;
+  line-height: 1.5;
 }
 
 .adminButtonRow {
@@ -757,20 +826,31 @@ a {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .adminActionCell form {
   margin: 0;
 }
 
+.adminActionCell .btn,
+.adminActionCell form .btn {
+  white-space: nowrap;
+}
+
 .bookCardActions {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  margin-top: auto;
 }
 
 .bookCardActions .btn {
   border-radius: 999px;
+}
+
+.bookCardActions .btn-outline-warning {
+  background: transparent;
 }
 
 .adminTable th {

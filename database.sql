@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS books (
     stock INT NOT NULL DEFAULT 0,
     author_id INT NOT NULL,
     publisher VARCHAR(120) NOT NULL,
+    cover_image VARCHAR(255) NULL,
     FOREIGN KEY (author_id) REFERENCES authors(author_id)
         ON UPDATE CASCADE
 );
@@ -69,7 +70,7 @@ CREATE TABLE IF NOT EXISTS admin_users (
 );
 
 INSERT INTO admin_users (username, password_hash)
-SELECT 'admin', '$2y$10$6E9JV4vFTgtGVCy48vepgOv83JrI4g/CgI5g48.a9CdRNSp8WePT.'
+SELECT 'admin', 'admin123'
 WHERE NOT EXISTS (
     SELECT 1 FROM admin_users WHERE username = 'admin'
 );

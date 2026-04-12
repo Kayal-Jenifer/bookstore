@@ -40,6 +40,7 @@ $schemaStatements = [
         stock INT NOT NULL DEFAULT 0,
         author_id INT NOT NULL,
         publisher VARCHAR(120) NOT NULL,
+        cover_image VARCHAR(255) NULL,
         FOREIGN KEY (author_id) REFERENCES authors(author_id)
             ON UPDATE CASCADE
     )",
@@ -95,5 +96,10 @@ foreach ($schemaStatements as $statement) {
 $ordersNotesColumn = $conn->query("SHOW COLUMNS FROM orders LIKE 'notes'");
 if ($ordersNotesColumn && $ordersNotesColumn->num_rows === 0) {
     $conn->query("ALTER TABLE orders ADD COLUMN notes TEXT NULL AFTER total_amount");
+}
+
+$bookCoverColumn = $conn->query("SHOW COLUMNS FROM books LIKE 'cover_image'");
+if ($bookCoverColumn && $bookCoverColumn->num_rows === 0) {
+    $conn->query("ALTER TABLE books ADD COLUMN cover_image VARCHAR(255) NULL AFTER publisher");
 }
 ?>

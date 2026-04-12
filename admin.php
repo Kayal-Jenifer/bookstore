@@ -207,10 +207,11 @@ include 'includes/header.php';
                     </div>
                 </div>
                 <div class="adminGrid">
-                    <form method="post" action="admin_backend.php" class="adminPanel adminFormGrid">
+                    <form method="post" action="admin_backend.php" enctype="multipart/form-data" class="adminPanel adminFormGrid" id="bookForm">
                         <input type="hidden" name="action" value="save_book">
                         <input type="hidden" name="section" value="books">
                         <input type="hidden" name="book_id" value="<?php echo (int) ($editingBook["book_id"] ?? 0); ?>">
+                        <input type="hidden" name="existing_cover_image" value="<?php echo htmlspecialchars($editingBook["cover_image"] ?? ""); ?>">
 
                         <h3><?php echo $editingBook ? 'Edit Book' : 'Add Book'; ?></h3>
 
@@ -256,6 +257,34 @@ include 'includes/header.php';
                             <input type="text" name="publisher" class="form-control" value="<?php echo htmlspecialchars($editingBook["publisher"] ?? ""); ?>" required>
                         </label>
 
+                        <label class="adminField">
+                            <span>Book Image</span>
+                            <input type="file" name="cover_image" id="coverImageInput" class="form-control" accept="image/*">
+                            <?php if (!empty($editingBook["cover_image"])): ?>
+                                <small class="text-muted">Current image: <?php echo htmlspecialchars($editingBook["cover_image"]); ?></small>
+                            <?php else: ?>
+                                <small class="text-muted">Upload a cover image to show on the books page.</small>
+                            <?php endif; ?>
+                            <small class="text-muted">After choosing a file, the crop preview will appear below.</small>
+                        </label>
+
+                        <div class="bookCropTool" id="bookCropTool" hidden>
+                            <div class="bookCropPreviewWrap">
+                                <div class="bookCropFrame" id="bookCropFrame">
+                                    <img src="" alt="Book cover crop preview" id="bookCropPreview">
+                                </div>
+                            </div>
+
+                            <div class="bookCropControls">
+                                <div class="adminButtonRow">
+                                    <button type="button" class="btn btn-outline-dark rounded-pill px-4" id="cropZoomOutBtn">-</button>
+                                    <button type="button" class="btn btn-outline-dark rounded-pill px-4" id="cropZoomInBtn">+</button>
+                                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" id="cropResetBtn">Reset</button>
+                                </div>
+                                <span class="bookCropHint">Drag the image inside the fixed frame to position it. Use `+` or `-` if needed, then save the book.</span>
+                            </div>
+                        </div>
+
                         <div class="adminButtonRow">
                             <button type="submit" class="btn btn-warning rounded-pill px-4"><?php echo $editingBook ? 'Update Book' : 'Create Book'; ?></button>
                             <?php if ($editingBook): ?>
@@ -270,6 +299,7 @@ include 'includes/header.php';
                             <table class="table adminTable align-middle">
                                 <thead>
                                     <tr>
+                                        <th>Image</th>
                                         <th>Title</th>
                                         <th>Author</th>
                                         <th>Genre</th>
@@ -280,10 +310,17 @@ include 'includes/header.php';
                                 </thead>
                                 <tbody>
                                     <?php if (!$books): ?>
-                                        <tr><td colspan="6" class="text-center text-muted">No books added yet.</td></tr>
+                                        <tr><td colspan="7" class="text-center text-muted">No books added yet.</td></tr>
                                     <?php endif; ?>
                                     <?php foreach ($books as $book): ?>
                                         <tr>
+                                            <td>
+                                                <?php if (!empty($book["cover_image"])): ?>
+                                                    <img src="<?php echo htmlspecialchars($book["cover_image"]); ?>" alt="<?php echo htmlspecialchars($book["title"]); ?>" style="width:60px;height:80px;object-fit:cover;border-radius:10px;">
+                                                <?php else: ?>
+                                                    <span class="text-muted">No image</span>
+                                                <?php endif; ?>
+                                            </td>
                                             <td><?php echo htmlspecialchars($book["title"]); ?></td>
                                             <td><?php echo htmlspecialchars($book["author_name"]); ?></td>
                                             <td><?php echo htmlspecialchars($book["genre"]); ?></td>

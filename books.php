@@ -104,8 +104,7 @@ include 'includes/header.php';
         <?php foreach ($books as $index => $book): ?>
           <?php
           $audience = getBookAudience($book["genre"]);
-          $imageNumber = ($index % 4) + 1;
-          $coverPath = "assets/images/book" . $imageNumber . ".jpg";
+          $coverPath = !empty($book["cover_image"]) ? $book["cover_image"] : "https://via.placeholder.com/600x800/f3e5d8/7b2d26?text=" . urlencode($book["title"]);
           $description = $book["title"] . " is a " . strtolower($book["genre"]) . " title by " . $book["author_name"] . ", published by " . $book["publisher"] . ".";
           ?>
           <div

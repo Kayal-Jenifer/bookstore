@@ -27,6 +27,58 @@ function normalizeDateOrNull(?string $value): ?string
     return $value === "" ? null : $value;
 }
 
+function uploadBookCover(array $file): ?string
+{
+    if (($file["error"] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        return null;
+    }
+
+    if (($file["error"] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
+        throw new RuntimeException("Book image upload failed.");
+    }
+
+    $allowedMimeTypes = [
+        "image/jpeg" => "jpg",
+        "image/png" => "png",
+        "image/webp" => "webp"
+    ];
+
+    $tempPath = $file["tmp_name"] ?? "";
+    $mimeType = function_exists("mime_content_type") ? mime_content_type($tempPath) : null;
+
+    if (!$mimeType || !isset($allowedMimeTypes[$mimeType])) {
+        throw new RuntimeException("Please upload a JPG, PNG, or WEBP image.");
+    }
+
+    $uploadDirectory = __DIR__ . "/assets/uploads/books";
+
+    if (!is_dir($uploadDirectory) && !mkdir($uploadDirectory, 0777, true) && !is_dir($uploadDirectory)) {
+        throw new RuntimeException("Could not create the upload folder for book images.");
+    }
+
+    @chmod(__DIR__ . "/assets/uploads", 0777);
+    @chmod($uploadDirectory, 0777);
+
+    if (!is_writable($uploadDirectory)) {
+        throw new RuntimeException("The book image folder is not writable. Use the image URL field instead, or update folder permissions.");
+    }
+
+    $fileName = "book_" . time() . "_" . bin2hex(random_bytes(4)) . "." . $allowedMimeTypes[$mimeType];
+    $destination = $uploadDirectory . "/" . $fileName;
+
+    $saved = move_uploaded_file($tempPath, $destination);
+
+    if (!$saved && is_readable($tempPath)) {
+        $saved = copy($tempPath, $destination);
+    }
+
+    if (!$saved) {
+        throw new RuntimeException("Could not save the uploaded book image.");
+    }
+
+    return "assets/uploads/books/" . $fileName;
+}
+
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     redirectTo("admin.php");
 }
@@ -113,20 +165,23 @@ try {
             $stock = (int) ($_POST["stock"] ?? 0);
             $authorId = (int) ($_POST["author_id"] ?? 0);
             $publisher = trim($_POST["publisher"] ?? "");
+            $existingCoverImage = trim($_POST["existing_cover_image"] ?? "");
+            $uploadedCoverImage = uploadBookCover($_FILES["cover_image"] ?? []);
+            $coverImage = $uploadedCoverImage ?? $existingCoverImage;
 
             if ($title === "" || $isbn === "" || $genre === "" || $publisher === "" || $authorId <= 0) {
                 throw new RuntimeException("All book fields are required.");
             }
 
             if ($bookId > 0) {
-                $statement = $conn->prepare("UPDATE books SET title = ?, isbn = ?, genre = ?, price = ?, stock = ?, author_id = ?, publisher = ? WHERE book_id = ?");
-                $statement->bind_param("sssdiisi", $title, $isbn, $genre, $price, $stock, $authorId, $publisher, $bookId);
+                $statement = $conn->prepare("UPDATE books SET title = ?, isbn = ?, genre = ?, price = ?, stock = ?, author_id = ?, publisher = ?, cover_image = ? WHERE book_id = ?");
+                $statement->bind_param("sssdiissi", $title, $isbn, $genre, $price, $stock, $authorId, $publisher, $coverImage, $bookId);
                 $statement->execute();
                 $statement->close();
                 setAdminFlash("success", "Book updated successfully.");
             } else {
-                $statement = $conn->prepare("INSERT INTO books (title, isbn, genre, price, stock, author_id, publisher) VALUES (?, ?, ?, ?, ?, ?, ?)");
-                $statement->bind_param("sssdiis", $title, $isbn, $genre, $price, $stock, $authorId, $publisher);
+                $statement = $conn->prepare("INSERT INTO books (title, isbn, genre, price, stock, author_id, publisher, cover_image) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                $statement->bind_param("sssdiiss", $title, $isbn, $genre, $price, $stock, $authorId, $publisher, $coverImage);
                 $statement->execute();
                 $statement->close();
                 setAdminFlash("success", "Book created successfully.");

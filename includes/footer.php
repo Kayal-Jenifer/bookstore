@@ -10,7 +10,9 @@
                     <li><a href="index.php">Home</a></li>
                     <li><a href="books.php">Books</a></li>
                     <li><a href="about.php">About</a></li>
-                    <li><a href="contact.php">Reserve book</a></li>
+                    <li><a href="contact.php">Contact</a></li>
+                    <li><a href="signin.php">Sign In</a></li>
+                    <li><a href="signup.php">Sign Up</a></li>
                 </ul>
             </div>
             <div>
@@ -27,6 +29,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="assets/js/script.js?v=6"></script>
+<script src="assets/js/script.js?v=10"></script>
 </body>
 </html>
